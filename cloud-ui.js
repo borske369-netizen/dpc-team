@@ -28,7 +28,7 @@ export function managerCardHtml(s) {
       <h4>Live sync</h4>
       <p class="fine"><strong>Joining a team?</strong> Enter the code your manager texted you. Reps use the 6 character rep code, managers the 10 character manager code.</p>
       <div class="joinrow">
-        <input data-clcode="1" inputmode="text" autocapitalize="characters" autocomplete="off" maxlength="12" placeholder="Team code" value="${esc(ui.codeDraft)}" aria-label="Team code">
+        <input data-clcode="1" inputmode="text" autocapitalize="characters" autocomplete="off" maxlength="20" placeholder="Team or activation code" value="${esc(ui.codeDraft)}" aria-label="Team code">
         <button class="primary" data-cl="code" ${ui.busy ? "disabled" : ""}>Join</button>
       </div>
       ${repPhone ? "" : `<details class="startteam"><summary>Starting a new team? Needs an activation code</summary>
@@ -158,7 +158,8 @@ async function onClick(ev) {
   const s = A.S();
 
   if (act === "create") {
-    const key = await askText("Enter the activation code from David Borske. Starting a team requires one. If you are joining an existing team, cancel and enter the code your manager sent you.", "Activation code", "", "Next");
+    const key = ui.prefillKey || await askText("Enter the activation code from David Borske. Starting a team requires one. If you are joining an existing team, cancel and enter the code your manager sent you.", "Activation code", "", "Next");
+    ui.prefillKey = "";
     if (key === null) return;
     if (!key.trim()) { A.flash("An activation code is needed to start a team."); return; }
     let name = s.team || "";
@@ -181,6 +182,14 @@ async function onClick(ev) {
     const box = document.querySelector("[data-clcode]");
     const code = String((box && box.value) || ui.codeDraft || "").trim().toUpperCase();
     if (code.length < 6) { A.flash("Enter the code your manager gave you."); return; }
+    if (/^DPC-?[A-Z0-9]{4}-?[A-Z0-9]{4}$/.test(code.replace(/\s+/g, ""))) {
+      let k = code.replace(/[^A-Z0-9]/g, "");
+      k = k.slice(0, 3) + "-" + k.slice(3, 7) + "-" + k.slice(7, 11);
+      ui.prefillKey = k;
+      const f = document.createElement("button");
+      f.dataset.cl = "create";
+      return onClick({ target: f });
+    }
     openJoin(code);
     return;
   }
