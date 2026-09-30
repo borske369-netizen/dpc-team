@@ -37,6 +37,8 @@ const MESSAGES = {
   signed_out: "This phone was signed out of live sync.",
   managers_only: "Only a manager can do that.",
   not_self: "You cannot remove your own phone here.",
+  bad_key: "That activation code is not valid or was already used. Contact David Borske.",
+  team_paused: "This team's access is paused. Contact David Borske to turn it back on.",
 };
 
 async function rpc(fn, args) {
@@ -332,8 +334,8 @@ export function init(api) {
 
 /* ---------- joining and managing ---------- */
 
-export async function createTeam(teamName, myName) {
-  const res = await rpc("dpc_create_team", { p_team: teamName || "", p_name: myName || "" });
+export async function createTeam(teamName, myName, key) {
+  const res = await rpc("dpc_create_team", { p_team: teamName || "", p_name: myName || "", p_key: key || "" });
   A.commit((s) => {
     s.cloud = { token: res.token, role: "manager", team_id: res.team_id, team: res.team,
       join_code: res.join_code, manager_code: res.manager_code, since: null,

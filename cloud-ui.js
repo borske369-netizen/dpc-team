@@ -31,8 +31,8 @@ export function managerCardHtml(s) {
         <input data-clcode="1" inputmode="text" autocapitalize="characters" autocomplete="off" maxlength="12" placeholder="Team code" value="${esc(ui.codeDraft)}" aria-label="Team code">
         <button class="primary" data-cl="code" ${ui.busy ? "disabled" : ""}>Join</button>
       </div>
-      ${repPhone ? "" : `<details class="startteam"><summary>Starting a new team? Owner only, one time</summary>
-        <p class="fine">This creates a brand new team with this phone as its manager. Reps and managers joining an existing team should use the code above instead.
+      ${repPhone ? "" : `<details class="startteam"><summary>Starting a new team? Needs an activation code</summary>
+        <p class="fine">This creates a brand new team with this phone as its manager, using the activation code from David Borske. Reps and managers joining an existing team should use the code above instead.
         Once it is on, every phone on the team saves to one shared place, reps' numbers show up here as they log them, the team report emails itself at 7pm, and nothing is lost if a phone is.${TEAM_EDITION ? "" : " The private Recruiting tab stays on this phone."}</p>
         <div class="rowbtns"><button class="ghost" data-cl="create" ${ui.busy ? "disabled" : ""}>Start a new team</button></div>
       </details>`}
@@ -158,7 +158,9 @@ async function onClick(ev) {
   const s = A.S();
 
   if (act === "create") {
-    if (!(await ask(s.reps.length ? "Start a new team with this phone as its manager? If you are joining an existing team, cancel and enter the code your manager sent you." : "Start a new team with no roster yet? Reps can add themselves when they join. If you are joining an existing team, cancel and enter the code your manager sent you.", "Start the team"))) return;
+    const key = await askText("Enter the activation code from David Borske. Starting a team requires one. If you are joining an existing team, cancel and enter the code your manager sent you.", "Activation code", "", "Next");
+    if (key === null) return;
+    if (!key.trim()) { A.flash("An activation code is needed to start a team."); return; }
     let name = s.team || "";
     if (!name) {
       name = await askText("Team name, as it should appear on reports:", "For example, Charlotte team", "", "Next");
@@ -169,7 +171,7 @@ async function onClick(ev) {
       if (name && !s.team) A.commit((x) => { x.team = name; });
       const me = await askText("Your name, so the team sees who the manager is:", "Your name", "", "Turn on live sync");
       if (me === null) { ui.busy = false; A.render(); return; }
-      await cloud.createTeam(name, me.trim());
+      await cloud.createTeam(name, me.trim(), key.trim().toUpperCase());
       A.flash("Live sync is on. Send the rep invite next.");
     } catch (e) { A.flash(e.message); }
     ui.busy = false; A.render();
