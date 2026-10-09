@@ -10,4 +10,4 @@ import{today as m,weekStart as h,isoDay as v,FLAG_RULE as g,isOff as D}from"./mo
     ${u}
     ${y?`<p class="goalbest">${y}</p>`:""}
     ${g.set&&g.contactsPerDay>0&&i<g.contactsPerDay&&!D(o,m())?`<p class="goalbest">Team pace: at least ${g.contactsPerDay} ${f} a day. You are at ${i}.</p>`:""}
-  </div>`}function Y(t){return String(t).replace(/[&<>"]/g,o=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[o])}export{f as L,x as dPerSale,k as goalFor,O as goalHtml,M as progressLine};
+  </div>`}function Y(t){return String(t??"").replace(/[&<>"']/g,o=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[o])}export{f as L,x as dPerSale,k as goalFor,O as goalHtml,M as progressLine};
