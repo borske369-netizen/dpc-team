@@ -64,7 +64,7 @@ Open this link, enter your key, and you are in. Then add it to your home screen 
     </div>`}const s=u.syncStatus(),r=t.role==="manager",f=s.state==="offline"?"No signal right now. Everything is saved on this phone and sends when you reconnect.":s.state==="error"?i(s.msg||"Sync paused. It will try again."):"Last synced "+H(t.lastOk)+".";if(!r)return`<div class="card cloudcard" id="livesync">
       <h4>Live sync is on</h4>
       <p class="fine">Signed in to ${i(t.team||"your team")}${t.name?" as "+i(t.name):""}. ${f}${t.key?` Your key is <b>${i(t.key)}</b>.`:""}</p>
-      <div class="rowbtns"><button class="ghost" data-cl="sync">Sync now</button><button class="ghost" data-tipsreset="1">Show tips again</button></div>
+      <div class="rowbtns"><button class="ghost" data-cl="sync">Sync now</button><button class="ghost" data-tipsreset="1">Show tips again</button><button class="ghost" data-cl="leave">Sign out</button></div>
     </div>`;const c=e.newKey,a=e.peopleOpen&&e.people?(()=>{const d=new Set(e.people.filter(p=>p.rep_id).map(p=>p.rep_id)),$=(n.reps||[]).filter(p=>p.active!==!1&&!d.has(p.id)),w=p=>{const g=p.rep_id&&(n.reps||[]).find(y=>y.id===p.rep_id);return g&&g.phone?String(g.phone):K()[p.key]||""};return`<ul class="memlist keylist">${e.people.map(p=>{const g=w(p);return`
       <li><span><b>${i(p.name||"Unnamed")}</b> <span class="fine">${p.role==="manager"?"admin":"rep"}${p.mine?", you":""}</span><br>
         ${g?`<span class="fine repcell">${i(I(g))}</span><br>`:""}<b class="code">${i(p.key)}</b> <span class="fine">${p.phones?p.phones+" phone"+(p.phones===1?"":"s"):"not signed in yet"}</span></span>
@@ -93,6 +93,7 @@ Open this link, enter your key, and you are in. Then add it to your home screen 
     <div class="rowbtns teamkeys">
       <button class="ghost" data-cl="people">${e.peopleOpen?"Hide your team's keys":"See your team's keys"}</button>
       ${R(n)?`<a class="ghost btnlike" href="${i(R(n))}">Text the whole team</a>`:""}
+      <button class="ghost" data-cl="leave">Sign out</button>
     </div>
     ${a}
     <p class="fine">${i(t.team||"Your team")}. ${f}${t.key?` Your admin key is <b>${i(t.key)}</b>.`:""}</p>
