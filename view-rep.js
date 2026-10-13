@@ -1,43 +1,44 @@
 /*! Copyright 2026 David Borske. All rights reserved. */
-import{tipHtml as P}from"./guide.js";import{dayPlanHtml as W}from"./playbook.js";import{goalHtml as M}from"./goal.js";import{today as p,weekStart as F,weekLabel as H,repEntries as E,repTotals as U,weekTotals as L,rates as w,flagState as N,fmtPct as D,fmtNum as $,fmt1 as O,num as i,uid as j,minText as A}from"./model.js";import{getFocus as _,recheckDue as B,RECHECK_AFTER_D as G,sinceFocus as K}from"./selfcheck.js";import{callbackHtml as q}from"./callbacks.js";import{timeOffHtml as z,offTodayHtml as J}from"./timeoff.js";import{eventsHtml as Q}from"./events.js";const C=[{key:"d",letter:"D",label:"Made contact",help:"You made contact at the door."},{key:"p",letter:"P",label:"Presentation",help:"You presented."},{key:"c",letter:"C",label:"Close (ask for business)",help:"You asked. This is not the sale."},{key:"sale",letter:"S",label:"Sale",help:"They said yes."}],d={editDate:null,editOpen:!1,remindOpen:!1,lastRep:null,undo:[]};function b(t,e,s){return(t.entries[e]||[]).find(o=>o.date===s)||null}function Y(t,e){const s=p();return t.entries[e]||(t.entries[e]=[]),b(t,e,s)||t.entries[e].push({id:j(),date:s,d:0,p:0,c:0,sale:0,note:""}),t}function pe(t,e,s,a){Y(t,e);const o=b(t,e,p());d.lastRep!==e&&(d.lastRep=e,d.editDate=null);const n=d.editDate&&d.editDate<=p()?d.editDate:p(),v=b(t,e,n)||{d:0,p:0,c:0,sale:0},c=["d","p","c","sale"],f=c.indexOf(s);if(a>0){for(let l=0;l<=f;l++)o[c[l]]=i(o[c[l]])+a;d.undo.push({repId:e,date:o.date,key:s}),d.undo.length>50&&d.undo.shift()}else{const l=c[f+1];if(l&&i(o[l])>i(o[s])+a)return d.blocked={d:"P",p:"C",c:"S"}[s]||"",t;o[s]=Math.max(0,i(o[s])+a),d.undo=d.undo.filter(m=>!(m.repId===e&&m.date===o.date))}for(let l=1;l<c.length;l++){const m=c[l-1],k=c[l];i(o[k])>i(o[m])&&(o[k]=i(o[m]))}return t}function me(t){const e=d.undo.pop();if(!e)return t;const s=b(t,e.repId,e.date);if(!s)return t;const a=["d","p","c","sale"],o=a.indexOf(e.key);for(let n=0;n<=o;n++)s[a[n]]=Math.max(0,i(s[a[n]])-1);for(let n=1;n<a.length;n++)i(s[a[n]])>i(s[a[n-1]])&&(s[a[n]]=i(s[a[n-1]]));return t}function he(t,e,s){const a=e.activeRep,o=e.reps.find(r=>r.id===a);if(!o){t.innerHTML=`<div class="pad"><div class="empty">
+import{tipHtml as A}from"./guide.js";import{dayPlanHtml as F}from"./playbook.js";import{goalHtml as W}from"./goal.js";import{today as h,weekStart as Y,weekLabel as H,repEntries as E,repTotals as L,weekTotals as N,rates as w,flagState as U,fmtPct as D,fmtNum as $,fmt1 as O,num as d,uid as j,minText as P}from"./model.js";import{getFocus as _,recheckDue as B,RECHECK_AFTER_D as G,sinceFocus as K}from"./selfcheck.js";import{callbackHtml as q}from"./callbacks.js";import{timeOffHtml as z,offTodayHtml as J}from"./timeoff.js";import{eventsHtml as Q}from"./events.js";const C=[{key:"d",letter:"D",label:"Made contact",help:"You made contact at the door."},{key:"p",letter:"P",label:"Presentation",help:"You presented."},{key:"c",letter:"C",label:"Close (ask for business)",help:"You asked. This is not the sale."},{key:"sale",letter:"S",label:"Sale",help:"They said yes."}],i={editDate:null,editOpen:!1,remindOpen:!1,lastRep:null,undo:[]};function y(t,e,a){return(t.entries[e]||[]).find(n=>n.date===a)||null}function S(t,e){const a=h();return t.entries[e]||(t.entries[e]=[]),y(t,e,a)||t.entries[e].push({id:j(),date:a,d:0,p:0,c:0,sale:0,note:"",st:0,stMbps:""}),t}function me(t,e,a,s){S(t,e);const n=y(t,e,h());i.lastRep!==e&&(i.lastRep=e,i.editDate=null);const o=i.editDate&&i.editDate<=h()?i.editDate:h(),l=y(t,e,o)||{d:0,p:0,c:0,sale:0},p=["d","p","c","sale"],b=p.indexOf(a);if(s>0){for(let r=0;r<=b;r++)n[p[r]]=d(n[p[r]])+s;i.undo.push({repId:e,date:n.date,key:a}),i.undo.length>50&&i.undo.shift()}else{const r=p[b+1];if(r&&d(n[r])>d(n[a])+s)return i.blocked={d:"P",p:"C",c:"S"}[a]||"",t;n[a]=Math.max(0,d(n[a])+s),i.undo=i.undo.filter(m=>!(m.repId===e&&m.date===n.date))}for(let r=1;r<p.length;r++){const m=p[r-1],g=p[r];d(n[g])>d(n[m])&&(n[g]=d(n[m]))}return t}function ve(t){const e=i.undo.pop();if(!e)return t;const a=y(t,e.repId,e.date);if(!a)return t;const s=["d","p","c","sale"],n=s.indexOf(e.key);for(let o=0;o<=n;o++)a[s[o]]=Math.max(0,d(a[s[o]])-1);for(let o=1;o<s.length;o++)d(a[s[o]])>d(a[s[o-1]])&&(a[s[o]]=d(a[s[o-1]]));return t}function be(t,e,a){const s=e.activeRep,n=e.reps.find(c=>c.id===s);if(!n){t.innerHTML=`<div class="pad"><div class="empty">
       <h3>${e.cloud&&e.cloud.role==="manager"&&e.cloud.token?"Your reps":"Pick who you are"}</h3>
       <p>${e.cloud&&e.cloud.role==="manager"&&e.cloud.token?"Pick a rep to see their day.":"Choose your name so the day is logged against you."}</p>
-      ${e.reps.length?`<div class="pickgrid">${e.reps.map(r=>`<button class="pick" data-pickrep="${u(r.id)}">${u(r.name||"Unnamed")}</button>`).join("")}</div>`:'<p class="fine">No one is on the roster yet. Add the team in the manager view first.</p>'}
-    </div></div>`;return}Y(e,a);const n=b(e,a,p());d.lastRep!==a&&(d.lastRep=a,d.editDate=null);const v=d.editDate&&d.editDate<=p()?d.editDate:p(),c=b(e,a,v)||{d:0,p:0,c:0,sale:0},f=U(e,a),l=w(f),m=N(e,a),k=L(e,a),R=F(p()),y=k[R]||{d:0,p:0,c:0,sale:0,days:0},T=w(y),g=w({...n,days:1});t.innerHTML=`
+      ${e.reps.length?`<div class="pickgrid">${e.reps.map(c=>`<button class="pick" data-pickrep="${u(c.id)}">${u(c.name||"Unnamed")}</button>`).join("")}</div>`:'<p class="fine">No one is on the roster yet. Add the team in the manager view first.</p>'}
+    </div></div>`;return}S(e,s);const o=y(e,s,h());i.lastRep!==s&&(i.lastRep=s,i.editDate=null);const l=i.editDate&&i.editDate<=h()?i.editDate:h(),p=y(e,s,l)||{d:0,p:0,c:0,sale:0},b=L(e,s),r=w(b),m=U(e,s),g=N(e,s),R=Y(h()),f=g[R]||{d:0,p:0,c:0,sale:0,days:0},T=w(f),k=w({...o,days:1});t.innerHTML=`
   <div class="repwrap">
     <div class="rephead">
       <div>
-        <div class="rname">${u(o.name||"Unnamed")}</div>
+        <div class="rname">${u(n.name||"Unnamed")}</div>
         <div class="rsub">${new Date().toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})}</div>
       </div>
       ${e.cloud&&e.cloud.token&&e.cloud.role==="rep"?'<button class="ghost sm" data-cl="leave">Sign out</button>':e.cloud&&e.cloud.role==="manager"?'<button class="ghost sm" data-view="manager">Back to team</button>':'<button class="ghost sm" data-switchrep="1">Not you</button>'}
     </div>
 
-    ${e.cloud&&e.cloud.role==="manager"?`<div class="viewing">You are looking at ${u(o.name||"this rep")}'s day. Taps here change their numbers.</div>
-    <details class="editrep" data-rep="${u(o.id)}"><summary>Rename or remove this rep</summary>
-      <label class="fine">Name <input data-repf="name" value="${u(o.name||"")}" autocomplete="off"></label>
-      <label class="fine">Market <input data-repf="market" value="${u(o.market||"")}" placeholder="Optional" autocomplete="off"></label>
-      <div class="rowbtns"><button class="ghost danger" data-delrep="${u(o.id)}">Remove from team</button></div>
+    ${e.cloud&&e.cloud.role==="manager"?`<div class="viewing">You are looking at ${u(n.name||"this rep")}'s day. Taps here change their numbers.</div>
+    <details class="editrep" data-rep="${u(n.id)}"><summary>Rename or remove this rep</summary>
+      <label class="fine">Name <input data-repf="name" value="${u(n.name||"")}" autocomplete="off"></label>
+      <label class="fine">Market <input data-repf="market" value="${u(n.market||"")}" placeholder="Optional" autocomplete="off"></label>
+      <div class="rowbtns"><button class="ghost danger" data-delrep="${u(n.id)}">Remove from team</button></div>
     </details>`:""}
-    ${e.cloud&&e.cloud.role==="manager"?"":P("rep-day","After every conversation, tap the furthest step it reached. S fills in the rest.")}
-    ${e.cloud&&e.cloud.role==="manager"?"":d.undo.length?P("rep-undo","Wrong tap? Press Undo last tap."):""}
-    ${J(e,a)}
-    ${Z(m,y,!!(e.cloud&&e.cloud.role==="manager"))}
+    ${e.cloud&&e.cloud.role==="manager"?"":A("rep-day","After every conversation, tap the furthest step it reached. S fills in the rest.")}
+    ${e.cloud&&e.cloud.role==="manager"?"":i.undo.length?A("rep-undo","Wrong tap? Press Undo last tap."):""}
+    ${J(e,s)}
+    ${Z(m,f,!!(e.cloud&&e.cloud.role==="manager"))}
 
     <div class="taps">
-      ${C.map(r=>I(r,n,g)).join("")}
+      ${C.map(c=>te(c,o,k)).join("")}
     </div>
-    ${M(e,a,n)}
-    ${d.undo.some(r=>r.repId===a&&r.date===p())?'<button class="ghost sm undotap" data-undotap="1">Undo last tap</button>':""}
-    ${q(e,a)}
+    ${ee(o)}
+    ${W(e,s,o)}
+    ${i.undo.some(c=>c.repId===s&&c.date===h())?'<button class="ghost sm undotap" data-undotap="1">Undo last tap</button>':""}
+    ${q(e,s)}
 
-    ${X(e,a)}
+    ${X(e,s)}
 
     <div class="card">
       <h4>Where today is breaking down</h4>
-      ${x("D to presentation",g.dToP,n.d,n.p)}
-      ${x("Presentation to ask",g.pToC,n.p,n.c)}
-      ${x("Ask to sale",g.cToSale,n.c,n.sale)}
+      ${M("D to presentation",k.dToP,o.d,o.p)}
+      ${M("Presentation to ask",k.pToC,o.p,o.c)}
+      ${M("Ask to sale",k.cToSale,o.c,o.sale)}
       <p class="fine">Each bar is the share that made it from the step before, today only.
       Not yet means you have not reached that step, which is not the same as zero.</p>
     </div>
@@ -45,33 +46,33 @@ import{tipHtml as P}from"./guide.js";import{dayPlanHtml as W}from"./playbook.js"
     <div class="card">
       <h4>This week so far</h4>
       <div class="wgrid">
-        ${h("D",$(y.d))}
-        ${h("Presentations",$(y.p))}
-        ${h("Asked",$(y.c))}
-        ${h("Sales",$(y.sale),!0)}
+        ${v("D",$(f.d))}
+        ${v("Presentations",$(f.p))}
+        ${v("Asked",$(f.c))}
+        ${v("Sales",$(f.sale),!0)}
       </div>
       <div class="wgrid2">
-        ${h("Ask rate",D(T.pToC))}
-        ${h("Ask to sale",D(T.cToSale))}
-        ${h("D per sale",O(T.doorsPerSale))}
-        ${h("Days worked",$(y.days))}
+        ${v("Ask rate",D(T.pToC))}
+        ${v("Ask to sale",D(T.cToSale))}
+        ${v("D per sale",O(T.doorsPerSale))}
+        ${v("Days worked",$(f.days))}
       </div>
       <p class="fine">Week of ${H(R)}. Rates are totals over totals, not an average of your days.</p>
     </div>
 
     <div class="card">
       <h4>Note for today</h4>
-      <textarea data-note="1" rows="2" maxlength="500" placeholder="Anything worth remembering about today">${u(n.note||"")}</textarea>
+      <textarea data-note="1" rows="2" maxlength="500" placeholder="Anything worth remembering about today">${u(o.note||"")}</textarea>
     </div>
 
-    <details class="card" data-editbox="1" ${d.editOpen?"open":""}>
+    <details class="card" data-editbox="1" ${i.editOpen?"open":""}>
       <summary>Fix a number or log a past day</summary>
       <div class="editgrid">
-        <label>Date<input type="date" data-editdate="1" value="${v}" max="${p()}"></label>
-        ${C.map(r=>`<label>${r.label}<input type="text" inputmode="numeric" data-editk="${r.key}" value="${i(c[r.key])}"></label>`).join("")}
+        <label>Date<input type="date" data-editdate="1" value="${l}" max="${h()}"></label>
+        ${C.map(c=>`<label>${c.label}<input type="text" inputmode="numeric" data-editk="${c.key}" value="${d(p[c.key])}"></label>`).join("")}
       </div>
-      ${V(c)}
-      <p class="fine">${v===p()?"Pick a past date to load that day and correct it without touching today.":"Editing "+new Date(v+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})+". Today is untouched."}</p>
+      ${V(p)}
+      <p class="fine">${l===h()?"Pick a past date to load that day and correct it without touching today.":"Editing "+new Date(l+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})+". Today is untouched."}</p>
     </details>
 
     ${e.cloud&&e.cloud.token?"":`<div class="card">
@@ -81,58 +82,69 @@ import{tipHtml as P}from"./guide.js";import{dayPlanHtml as W}from"./playbook.js"
       <button class="ghost" data-backup="1">Back up this phone</button></div>
     </div>`}
 
-    <details class="card" data-remindbox="1" ${d.remindOpen?"open":""}>
+    <details class="card" data-remindbox="1" ${i.remindOpen?"open":""}>
       <summary>Your reminders</summary>
       <div data-remindhost="1"></div>
     </details>
 
     <div class="card">
       <h4>Your last days</h4>
-      ${ee(e,a)}
+      ${se(e,s)}
     </div>
-    ${z(e,a)}
-    ${Q(e,a)}
-    ${W()}
-  </div>`}function V(t){const e=i(t.d),s=i(t.p),a=i(t.c),o=i(t.sale),n=s>e?"More presentations than D":a>s?"More asks than presentations":o>a?"More sales than asks":"";return n?`<p class="fine warnline">${n}. Check the numbers for this day.</p>`:""}function X(t,e){const s=_(t,e);if(!s)return"";const a=K(t,e,s),o=B(t,e);return`<div class="sc-focus${o?" due":""}">
+    ${z(e,s)}
+    ${Q(e,s)}
+    ${F()}
+  </div>`}function V(t){const e=d(t.d),a=d(t.p),s=d(t.c),n=d(t.sale),o=a>e?"More presentations than D":s>a?"More asks than presentations":n>s?"More sales than asks":"";return o?`<p class="fine warnline">${o}. Check the numbers for this day.</p>`:""}function X(t,e){const a=_(t,e);if(!a)return"";const s=K(t,e,a),n=B(t,e);return`<div class="sc-focus${n?" due":""}">
     <p class="sc-focus-l">Your focus right now</p>
-    <p class="sc-focus-t">${u(s.text)}</p>
-    ${s.how?`<p class="sc-focus-how">${u(s.how)}</p>`:""}
-    ${o?`<p class="sc-focus-due">${a} D since you locked this in. Did you run it?</p>
-         <div class="sc-row"><button class="btn-primary" data-repfocus="yes">Yes, I ran it</button><button class="btn-secondary" data-repfocus="no">Not yet</button></div>`:`<p class="sc-focus-meta">${a} of ${G} D until your check in.</p>`}
-  </div>`}function Z(t,e,s){const a=s?String(t.reason||"").replace("against you","against them"):t.reason,o=e.sale+" sale"+(e.sale===1?"":"s")+" this week";if(t.unset)return`<div class="standing neutral">
+    <p class="sc-focus-t">${u(a.text)}</p>
+    ${a.how?`<p class="sc-focus-how">${u(a.how)}</p>`:""}
+    ${n?`<p class="sc-focus-due">${s} D since you locked this in. Did you run it?</p>
+         <div class="sc-row"><button class="btn-primary" data-repfocus="yes">Yes, I ran it</button><button class="btn-secondary" data-repfocus="no">Not yet</button></div>`:`<p class="sc-focus-meta">${s} of ${G} D until your check in.</p>`}
+  </div>`}function Z(t,e,a){const s=a?String(t.reason||"").replace("against you","against them"):t.reason,n=e.sale+" sale"+(e.sale===1?"":"s")+" this week";if(t.unset)return`<div class="standing neutral">
     <div class="sthead">This week</div>
     <div class="stbody"><b>${e.sale}</b> sale${e.sale===1?"":"s"} this week.</div>
-    <div class="fine">${s?"You have not set the team standards yet.":"Your manager has not set the team standards yet."}</div>
+    <div class="fine">${a?"You have not set the team standards yet.":"Your manager has not set the team standards yet."}</div>
   </div>`;if(!t.flagged&&!t.atRisk&&t.targetThisWeek>0&&t.needThisWeek===0)return`<div class="standing good">
     <div class="sthead">This week</div>
     <div class="stbody"><b>${e.sale}</b> sale${e.sale===1?"":"s"} this week. Team minimum cleared.</div>
-  </div>`;const v=t.flagged?"bad":t.atRisk?"warn":"good",c=t.flagged?"Flagged":t.atRisk?"At risk this week":"This week",f=t.needThisWeek;return`<div class="standing ${v}">
-    <div class="sthead">${c}</div>
-    <div class="stbody">${u(a)}</div>
+  </div>`;const l=t.flagged?"bad":t.atRisk?"warn":"good",p=t.flagged?"Flagged":t.atRisk?"At risk this week":"This week",b=t.needThisWeek;return`<div class="standing ${l}">
+    <div class="sthead">${p}</div>
+    <div class="stbody">${u(s)}</div>
     <div class="stbar">
-      ${t.targetThisWeek>0&&t.targetThisWeek<=15?Array.from({length:t.targetThisWeek},(l,m)=>`<span class="pip ${m<e.sale?"on":""}"></span>`).join(""):""}
-      <span class="stcount">${o}</span>
+      ${t.targetThisWeek>0&&t.targetThisWeek<=15?Array.from({length:t.targetThisWeek},(r,m)=>`<span class="pip ${m<e.sale?"on":""}"></span>`).join(""):""}
+      <span class="stcount">${n}</span>
     </div>
-    <div class="fine">${t.targetThisWeek===0?"Team minimum: "+A()+(s?". It counts once they log their first conversation.":". It counts once you log your first conversation."):f+" more "+(f===1?"sale":"sales")+" clears the team minimum of "+A()+"."}</div>
-  </div>`}function I(t,e,s){const a=i(e[t.key]),o=t.key==="p"?S(s.dToP,"of D"):t.key==="c"?S(s.pToC,"of presentations"):t.key==="sale"?S(s.cToSale,"of asks"):t.key==="d"?"You got a conversation":"";return`<div class="tap ${t.key==="c"?"accentedge":""}">
+    <div class="fine">${t.targetThisWeek===0?"Team minimum: "+P()+(a?". It counts once they log their first conversation.":". It counts once you log your first conversation."):b+" more "+(b===1?"sale":"sales")+" clears the team minimum of "+P()+"."}</div>
+  </div>`}function I(t){return String(t.stMbps||"").split(",").map(e=>parseFloat(e)).filter(e=>e>0)}function ee(t){const e=d(t.st),a=I(t),s=a.length?Math.round(a.reduce((o,l)=>o+l,0)/a.length):null,n=e===0?"Tap after every speed test you run. Ask first, show the real result. WiFi can affect it.":s!==null?"Average "+s+" Mbps. Last "+a[a.length-1]+" Mbps.":"No speeds entered.";return`<div class="tap speedtap">
+    <div class="tapl">
+      <span class="tletter">ST</span>
+      <span class="tlabel">Speed tests today</span>
+    </div>
+    <div class="tapv">${e}</div>
+    <div class="tapsub">${u(n)}</div>
+    <div class="taprow">
+      <button class="minus" data-speed="-1" aria-label="Remove one speed test">−</button>
+      <button class="plus" data-speed="1" aria-label="Clock a speed test">+</button>
+    </div>
+  </div>`}function fe(t,e,a,s){S(t,e);const n=y(t,e,h());n.st=Math.max(0,d(n.st)+a);let o=String(n.stMbps||"").split(",").filter(l=>l!=="");if(a>0){const l=parseFloat(s);l>0&&l<1e5&&o.push(String(Math.round(l*10)/10))}for(;o.length>n.st;)o.pop();return n.stMbps=o.join(",").slice(0,2e3),t}function te(t,e,a){const s=d(e[t.key]),n=t.key==="p"?x(a.dToP,"of D"):t.key==="c"?x(a.pToC,"of presentations"):t.key==="sale"?x(a.cToSale,"of asks"):t.key==="d"?"You got a conversation":"";return`<div class="tap ${t.key==="c"?"accentedge":""}">
     <div class="tapl">
       <span class="tletter">${t.letter}</span>
       <span class="tlabel">${t.label}</span>
     </div>
-    <div class="tapv">${a}</div>
-    <div class="tapsub">${o||t.help}</div>
+    <div class="tapv">${s}</div>
+    <div class="tapsub">${n||t.help}</div>
     <div class="taprow">
       <button class="minus" data-bump="${t.key}" data-by="-1" aria-label="Remove one ${t.label}">−</button>
       <button class="plus" data-bump="${t.key}" data-by="1" aria-label="Add one ${t.label}">+</button>
     </div>
-  </div>`}function S(t,e){return t===null?"":(t*100).toFixed(0)+"% "+e}function x(t,e,s,a){const o=e===null?0:Math.max(0,Math.min(1,e))*100;return`<div class="brow">
+  </div>`}function x(t,e){return t===null?"":(t*100).toFixed(0)+"% "+e}function M(t,e,a,s){const n=e===null?0:Math.max(0,Math.min(1,e))*100;return`<div class="brow">
     <div class="blab">${t}</div>
-    <div class="btrack"><div class="bfill" style="width:${o.toFixed(1)}%"></div></div>
+    <div class="btrack"><div class="bfill" style="width:${n.toFixed(1)}%"></div></div>
     <div class="bval">${e===null?"not yet":(e*100).toFixed(0)+"%"}</div>
-    <div class="bfrac">${a} of ${s}</div>
-  </div>`}function h(t,e,s){return`<div class="wcell"><div class="wv ${s?"accent":""}">${e}</div><div class="wl">${t}</div></div>`}function ee(t,e){const s=E(t,e).slice(0,14);return s.length?`<div class="scroll"><table class="hist">
-    <thead><tr><th>Date</th><th class="num">D</th><th class="num">P</th><th class="num">Asked</th><th class="num">Sales</th><th class="num">Ask rate</th></tr></thead>
-    <tbody>${s.map(a=>{const o=w({...a,days:1});return`<tr><td>${new Date(a.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}</td>
-      <td class="num">${i(a.d)}</td><td class="num">${i(a.p)}</td>
-      <td class="num">${i(a.c)}</td><td class="num accent">${i(a.sale)}</td>
-      <td class="num">${D(o.pToC)}</td></tr>`}).join("")}</tbody></table></div>`:'<p class="fine">Nothing logged yet.</p>'}function u(t){return String(t??"").replace(/[&<>"']/g,e=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[e])}export{pe as bump,Y as ensureToday,u as esc,he as renderRep,d as repUI,me as undoTap};
+    <div class="bfrac">${s} of ${a}</div>
+  </div>`}function v(t,e,a){return`<div class="wcell"><div class="wv ${a?"accent":""}">${e}</div><div class="wl">${t}</div></div>`}function se(t,e){const a=E(t,e).slice(0,14);return a.length?`<div class="scroll"><table class="hist">
+    <thead><tr><th>Date</th><th class="num">D</th><th class="num">P</th><th class="num">Tests</th><th class="num">Asked</th><th class="num">Sales</th><th class="num">Ask rate</th></tr></thead>
+    <tbody>${a.map(s=>{const n=w({...s,days:1});return`<tr><td>${new Date(s.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}</td>
+      <td class="num">${d(s.d)}</td><td class="num">${d(s.p)}</td><td class="num">${d(s.st)}</td>
+      <td class="num">${d(s.c)}</td><td class="num accent">${d(s.sale)}</td>
+      <td class="num">${D(n.pToC)}</td></tr>`}).join("")}</tbody></table></div>`:'<p class="fine">Nothing logged yet.</p>'}function u(t){return String(t??"").replace(/[&<>"']/g,e=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[e])}export{me as bump,S as ensureToday,u as esc,be as renderRep,i as repUI,fe as speedBump,ve as undoTap};
