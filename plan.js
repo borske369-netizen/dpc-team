@@ -3,6 +3,40 @@ import { callRpc, GOALS, isOn } from "./cloud.js";
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const num = v => { const n = parseFloat(String(v ?? "").replace(/[$,\s]/g, "")); return isFinite(n) && n > 0 ? n : 0; };
+const GOAL_KEYS = ["g30", "g60", "g90", "p30", "p60", "p90"];
+const anyGoal = p => !!(p && GOAL_KEYS.some(k => String(p[k] || "").trim()));
+const SMART_NAMES = { S: "Specific", M: "Measurable", A: "Attainable", R: "Relatable", T: "Time frame" };
+const NUM_WORDS = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|hundred|thousand|half|double|daily|every day|each day|weekly|every week|times a week)\b/i;
+export function smartOf(text, days) {
+  const t = String(text || "").trim(), words = t ? t.split(/\s+/).filter(w => /[a-z0-9]/i.test(w)) : [];
+  const vague = /^(i will |i want to |to )?(be |do |get |make |have )?(better|more|good|great|best|rich|successful|happy|healthy|money|paid)\b/i;
+  const S = words.length >= 3 && !(words.length < 7 && vague.test(t));
+  const M = /\d/.test(t) || NUM_WORDS.test(t);
+  let A = M;
+  if (A) {
+    const sm = t.match(/(\d[\d,]*)\s*(sales|sale|deals|deal|accounts|customers|installs)\b/i);
+    if (sm && num(sm[1]) > days * 3) A = false;
+    const mo = t.match(/\$\s?(\d[\d,]*(?:\.\d+)?)\s*(k\b)?/i);
+    if (mo) { let v = num(mo[1]); if (mo[2]) v *= 1000; if (v > 50000 * Math.max(1, days / 30)) A = false; }
+    if (/\b(million|billion|millionaire|billionaire)\b/i.test(t)) A = false;
+    const lb = t.match(/\b(lose|drop)\s+(\d+)\s*(lb|lbs|pounds)\b/i); if (lb && num(lb[2]) > days * 0.35) A = false;
+  }
+  const R = /\b(so|because|for (my|me|the|our|us)|to (pay|save|buy|help|cover|support|build|provide|move|afford|take care|get out|become|be able|feel|keep)|which (will|lets|means)|in order to|that way)\b/i.test(t);
+  return { S, M, A, R, T: t.length > 0 };
+}
+function smartHint(r, days) {
+  if (!r.T) return "";
+  if (!r.S) return "Specific: say exactly what you will do or have.";
+  if (!r.M) return "Measurable: add a number, like 12 sales or $500 saved.";
+  if (!r.A) return `Attainable: that number looks too big for ${days} days. Pick one you can hit.`;
+  if (!r.R) return "Relatable: say why it matters to you, like so I can pay my rent.";
+  return "SMART goal. All five letters are lit.";
+}
+function smartInner(text, days, hint) {
+  const r = smartOf(text, days);
+  return `<span class="plsls">${"SMART".split("").map(L => `<span class="plsl${r[L] ? " on" : ""}" title="${SMART_NAMES[L]}" aria-label="${SMART_NAMES[L]} ${r[L] ? "met" : "not yet"}">${L}</span>`).join("")}</span>${hint ? `<span class="fine plshint">${esc(smartHint(r, days))}</span>` : ""}`;
+}
+function smartHtml(key, text, days, hint) { return `<div class="plsmart" data-plsmart="${key}" data-days="${days}">${smartInner(text, days, hint)}</div>`; }
 const money = n => "$" + Math.round(n).toLocaleString("en-US");
 const pct = n => Math.round(n * 100) + "%";
 const WEEKS = 4.33;
@@ -119,7 +153,7 @@ function draftFor(repId) {
     const p = st.plans[repId] || {};
     st.draftRep = repId;
     st.draft = {
-      g30: p.g30 || "", g60: p.g60 || "", g90: p.g90 || "",
+      g30: p.g30 || "", g60: p.g60 || "", g90: p.g90 || "", p30: p.p30 || "", p60: p.p60 || "", p90: p.p90 || "",
       income: p.income ? String(p.income) : "", pay: p.pay ? String(p.pay) : "", days: p.days ? String(p.days) : "5"
     };
   }
@@ -200,7 +234,7 @@ export function rateRoutine(items, plan) {
   const text = items.map(i => i.text).join("\n");
   let score = 0; const have = [], miss = [];
   CHECKS.forEach(c => { if (c.re.test(text)) { score += c.pts; have.push(c.name); } else miss.push(c); });
-  const hasGoals = !!([plan && plan.g30, plan && plan.g60, plan && plan.g90].filter(Boolean).join("").trim() || num(plan && plan.income));
+  const hasGoals = !!(anyGoal(plan) || num(plan && plan.income));
   const hasNum = CHECKS[3].re.test(text);
   const label = score >= 8 && hasNum ? "Strong" : score >= 5 ? "Good start" : "Needs work";
   return { score, label, have, miss: miss.sort((a, b) => b.pts - a.pts), hasGoals };
@@ -319,9 +353,12 @@ function repPage(s) {
   return `<div class="plwrap">
   <div class="card"><h4>My goals</h4>
     <p class="fine">Write them in your own words. Your manager sees what you write here.</p>
-    <label class="pllab">30 days from now, I will have<textarea data-pl="g30" rows="2" maxlength="600" placeholder="For example, 12 sales and my phone bill paid">${esc(d.g30)}</textarea></label>
-    <label class="pllab">60 days from now, I will have<textarea data-pl="g60" rows="2" maxlength="600">${esc(d.g60)}</textarea></label>
-    <label class="pllab">90 days from now, I will have<textarea data-pl="g90" rows="2" maxlength="600">${esc(d.g90)}</textarea></label>
+    <p class="fine plsmartkey">Make each goal SMART. The letters light up as your goal hits them: <b>S</b> Specific, <b>M</b> Measurable, <b>A</b> Attainable, <b>R</b> Relatable, <b>T</b> Time frame. The time frame is already set by the 30, 60 and 90 day slots.</p>
+    ${[[30, "12 sales so I can cover my rent and car", "save $300 so I have money set aside"], [60, "", ""], [90, "", ""]].map(([n, pb, pp]) => `<div class="plslot"><h5>${n} days from now</h5>
+      <label class="pllab">Business goal<textarea data-pl="g${n}" rows="2" maxlength="600"${pb ? ` placeholder="For example, ${pb}"` : ""}>${esc(d["g" + n])}</textarea></label>
+      ${smartHtml("g" + n, d["g" + n], n, true)}
+      <label class="pllab">Personal goal<textarea data-pl="p${n}" rows="2" maxlength="600"${pp ? ` placeholder="For example, ${pp}"` : ""}>${esc(d["p" + n])}</textarea></label>
+      ${smartHtml("p" + n, d["p" + n], n, true)}</div>`).join("")}
     <div class="plrow">
       <label class="pllab">Income a month<input data-pl="income" inputmode="decimal" placeholder="$4,000" value="${esc(d.income)}"></label>
       <label class="pllab">Pay per sale<input data-pl="pay" inputmode="decimal" placeholder="$100" value="${esc(d.pay)}"></label>
@@ -356,7 +393,7 @@ function repRows(s, kind) {
   return reps.map(r => {
     const p = st.plans[r.id], items = p && p.routine || [];
     const l = dayLog(r.id, day), n = l ? doneCount(items, l) : 0;
-    const hasGoals = p && (p.g30 || p.g60 || p.g90 || p.income);
+    const hasGoals = p && (anyGoal(p) || p.income);
     const pc = p ? pace(s, r.id, p) : null, t = today(s, r.id);
     const status = kind === "goals"
       ? (hasGoals ? '<span class="pill good">Goals set</span>' : '<span class="pill">No goals yet</span>')
@@ -365,7 +402,7 @@ function repRows(s, kind) {
     let detail = "";
     if (open) {
       if (kind === "goals") detail = hasGoals ? `<div class="pldetail">
-        <p><b>30 days:</b> ${esc(p.g30 || "not set")}</p><p><b>60 days:</b> ${esc(p.g60 || "not set")}</p><p><b>90 days:</b> ${esc(p.g90 || "not set")}</p>
+        ${[30, 60, 90].map(n => `<div class="plslot"><h5>${n} days</h5><p><b>Business:</b> ${esc(p["g" + n] || "not set")}</p>${p["g" + n] ? smartHtml("", p["g" + n], n, false) : ""}<p><b>Personal:</b> ${esc(p["p" + n] || "not set")}</p>${p["p" + n] ? smartHtml("", p["p" + n], n, false) : ""}</div>`).join("")}
         ${paceHtml(s, r.id, p, false)}</div>` : '<div class="pldetail"><p class="fine">No goals saved yet.</p></div>';
       else {
         const wr = weekRate(r.id, p), rt = items.length ? rateRoutine(items, p) : null;
@@ -442,7 +479,7 @@ async function save(s) {
   const routine = (st.plans[repId] && st.plans[repId].routine) || [];
   const inc = num(d.income), pay = num(d.pay);
   if (inc > 100000 || pay > 5000) { st.msg = inc > 100000 ? "Check your monthly income goal. That number looks too big." : "Check what you make per sale. That number looks too big."; app.render(); return; }
-  const plan = { g30: d.g30.trim().slice(0, 600), g60: d.g60.trim().slice(0, 600), g90: d.g90.trim().slice(0, 600), income: num(d.income), pay: num(d.pay), days: Math.min(7, Math.max(1, Math.round(num(d.days)) || 5)), routine };
+  const plan = { g30: d.g30.trim().slice(0, 600), g60: d.g60.trim().slice(0, 600), g90: d.g90.trim().slice(0, 600), p30: d.p30.trim().slice(0, 600), p60: d.p60.trim().slice(0, 600), p90: d.p90.trim().slice(0, 600), income: num(d.income), pay: num(d.pay), days: Math.min(7, Math.max(1, Math.round(num(d.days)) || 5)), routine };
   st.saving = true; st.msg = ""; app.render();
   try {
     await callRpc("dpc_plan_set", { p_token: token(s), p_rep_id: repId, p_plan: plan });
@@ -455,7 +492,7 @@ async function saveRoutine(s) {
   const repId = myRep(s); if (!repId || st.saving || !st.rSorted || !st.rSorted.length) return;
   const cur = st.plans[repId] || {}, old = cur.routine || [];
   const routine = st.rSorted.map((it, i) => { const same = old.find(o => o.text === it.text); return { id: same ? same.id : "r" + Date.now().toString(36) + i, text: it.text, part: it.part }; });
-  const plan = { g30: cur.g30 || "", g60: cur.g60 || "", g90: cur.g90 || "", income: num(cur.income), pay: num(cur.pay), days: Math.min(7, Math.max(1, Math.round(num(cur.days)) || 5)), routine };
+  const plan = { g30: cur.g30 || "", g60: cur.g60 || "", g90: cur.g90 || "", p30: cur.p30 || "", p60: cur.p60 || "", p90: cur.p90 || "", income: num(cur.income), pay: num(cur.pay), days: Math.min(7, Math.max(1, Math.round(num(cur.days)) || 5)), routine };
   st.saving = true; app.render();
   try {
     await callRpc("dpc_plan_set", { p_token: token(s), p_rep_id: repId, p_plan: plan });
@@ -488,7 +525,8 @@ export function init(a) {
   const getState = () => lastS;
   document.addEventListener("input", e => {
     const t = e.target; if (!t || !t.dataset) return;
-    if (t.dataset.pl && st.draft) { st.draft[t.dataset.pl] = t.value; if (/^(income|pay|days)$/.test(t.dataset.pl)) app.render(); }
+    if (t.dataset.pl && st.draft) { st.draft[t.dataset.pl] = t.value; if (/^(income|pay|days)$/.test(t.dataset.pl)) app.render();
+      else { const box = document.querySelector(`[data-plsmart="${t.dataset.pl}"]`); if (box) box.innerHTML = smartInner(t.value, +box.dataset.days || 30, true); } }
     if (t.dataset.plcontacts) st.cDraft = t.value;
     if (t.dataset.plrtext) { st.rDraft = t.value; if (st.rSorted) { st.rSorted = null; st.rMsg = "Tap Make my checklist to update it."; app.render(); } }
   });

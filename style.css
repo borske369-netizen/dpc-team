@@ -61,3 +61,12 @@
 .keypanel .joinrow{display:flex;gap:8px}
 .keypanel input{flex:1;min-width:0;min-height:48px;font-size:18px;letter-spacing:.04em}
 .keypanel .fine{margin:6px 0 8px}
+.plslot{border-top:1px solid var(--line);margin-top:12px;padding-top:4px}
+.plslot h5{margin:10px 0 0;font-size:15px;color:var(--accent)}
+.plsmart{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:-4px 0 6px}
+.plsls{display:inline-flex;gap:4px}
+.plsl{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:14px;border:1px solid var(--line);color:var(--muted);background:transparent;transition:background .2s,color .2s}
+.plsl.on{background:var(--accent);border-color:var(--accent);color:#06221f}
+.plshint{flex:1 1 180px}
+.plsmartkey b{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){.plsl{transition:none}}
