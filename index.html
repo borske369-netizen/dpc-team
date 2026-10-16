@@ -34,9 +34,14 @@
   <div class="spacer"></div>
   <span class="net" id="net">Ready</span>
   <a class="ghost sm hcbtn ownlink" id="ownlink" href="#owner" hidden aria-label="Owner page">Owner</a>
-  <button class="ghost sm hcbtn" id="signoutbtn" data-cl="leave" hidden>Sign out</button>
+  <button class="ghost sm hcbtn" id="keybtn" hidden aria-expanded="false" aria-controls="keypanel">Key</button>
   <button class="ghost sm hcbtn" id="hcbtn" aria-pressed="false" aria-label="High contrast">Aa</button>
   <button class="ghost sm" id="installbtn" hidden>Install</button>
+</div>
+<div id="keypanel" class="keypanel" hidden>
+  <div class="joinrow"><input data-clswitch="1" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="22" placeholder="Type any key" aria-label="Any key"><button class="primary" data-cl="switchkey">Go</button></div>
+  <p class="fine">Rep, manager or owner key. It takes you to the right place.</p>
+  <button class="ghost sm" id="signoutbtn" data-cl="leave" hidden>Sign this phone out</button>
 </div>
 
 <main id="root"></main>

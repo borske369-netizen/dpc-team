@@ -57,3 +57,7 @@
 .plday{min-width:0;width:100%;box-sizing:border-box;padding:0 2px;font-size:11px}
 .plrepbtn .pill{background:var(--surface2)!important;border-color:transparent!important}
 .plrepbtn .pill.good{background:var(--accent)!important;color:#06221f!important}
+.keypanel{position:sticky;top:var(--hdrh,56px);z-index:40;background:var(--surface);border-bottom:1px solid var(--line);padding:12px 14px}
+.keypanel .joinrow{display:flex;gap:8px}
+.keypanel input{flex:1;min-width:0;min-height:48px;font-size:18px;letter-spacing:.04em}
+.keypanel .fine{margin:6px 0 8px}
