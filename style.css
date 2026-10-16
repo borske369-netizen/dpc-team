@@ -70,3 +70,30 @@
 .plshint{flex:1 1 180px}
 .plsmartkey b{color:var(--accent)}
 @media (prefers-reduced-motion:reduce){.plsl{transition:none}}
+.plhopen{width:100%;min-height:48px;font-size:16px;margin:0 0 10px}
+.plhelper{border:1px solid var(--accent);border-radius:12px;padding:12px;margin:0 0 12px;min-width:0}
+.plhtop{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.plhq{font-size:18px;margin:8px 0 4px;overflow-wrap:anywhere}
+.plchips,.plhslots{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.plchip{min-height:44px;padding:8px 14px;border-radius:22px;border:1px solid var(--line);background:transparent;color:inherit;font-size:15px;max-width:100%;text-align:left}
+.plchip.on{background:var(--accent);border-color:var(--accent);color:#06221f}
+.plhitem,.plhrow{border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
+.plhrow p,.plhlab{margin:0;overflow-wrap:anywhere}
+.plhlab{font-weight:600}
+.plhelper textarea,.plhelper input{width:100%;box-sizing:border-box}
+.plhnav{display:flex;gap:10px;margin-top:12px}
+.plhnav button{flex:1;min-height:52px;font-size:17px}
+.oob-form{display:flex;flex-direction:column;gap:8px}
+.oob-form .oob-input{width:100%;box-sizing:border-box;min-height:48px}
+.oob-form .oob-check{width:100%;min-height:48px}
+summary{min-height:44px;display:flex;align-items:center;box-sizing:border-box}
+.ghost.sm,.ghost.small,button.sm{min-height:44px}
+.ownktab{table-layout:fixed;width:100%}
+.ownktab td{white-space:normal!important;word-break:break-word}
+.ownktab td:last-child{width:84px}
+.plrepbtn{flex-wrap:wrap}
+.plsay{flex:1 0 100%;text-align:left;margin-top:2px;font-weight:400}
+.plneed{margin:4px 0 6px}
+.plrepbtn .pill.warn{background:#5a4210!important;color:#ffd98a!important}
+.plrepbtn .pill.bad{background:#5a1a22!important;color:#ffb3bd!important}
+.oob-verdict-body .oob-verdict-line + .oob-verdict-line{margin-top:6px}

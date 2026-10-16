@@ -36,6 +36,18 @@ function smartInner(text, days, hint) {
   const r = smartOf(text, days);
   return `<span class="plsls">${"SMART".split("").map(L => `<span class="plsl${r[L] ? " on" : ""}" title="${SMART_NAMES[L]}" aria-label="${SMART_NAMES[L]} ${r[L] ? "met" : "not yet"}">${L}</span>`).join("")}</span>${hint ? `<span class="fine plshint">${esc(smartHint(r, days))}</span>` : ""}`;
 }
+const LS = { get(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } }, set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const netErr = e => (typeof navigator !== "undefined" && navigator.onLine === false) || /network|fetch|signal|connection|offline|timed? ?out/i.test(String(e && e.message || e || ""));
+async function sendPlan(s, repId, plan) {
+  try { await callRpc("dpc_plan_set", { p_token: token(s), p_rep_id: repId, p_plan: plan }); LS.set("dpc.pendplan." + repId, null); return "sent"; }
+  catch (e) { if (netErr(e)) { LS.set("dpc.pendplan." + repId, plan); return "queued"; } throw e; }
+}
+async function flushPlan(s) {
+  const repId = myRep(s); if (!repId || !token(s)) return;
+  const p = LS.get("dpc.pendplan." + repId); if (!p) return;
+  try { if (await sendPlan(s, repId, p) === "sent") { if (st.msg && /Not sent yet/.test(st.msg)) st.msg = "Sent. Your manager can see your goals."; if (st.rMsg && /Not sent yet/.test(st.rMsg)) st.rMsg = "Sent. Your manager can see it."; app && app.render(); } } catch {}
+}
+function grow(t) { if (!t || t.tagName !== "TEXTAREA") return; t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight + 2, 420) + "px"; }
 function smartHtml(key, text, days, hint) { return `<div class="plsmart" data-plsmart="${key}" data-days="${days}">${smartInner(text, days, hint)}</div>`; }
 const money = n => "$" + Math.round(n).toLocaleString("en-US");
 const pct = n => Math.round(n * 100) + "%";
@@ -52,7 +64,7 @@ function fmtPhone(p) { const d = String(p || "").replace(/\D/g, "").replace(/^1(
 const st = {
   loaded: false, loading: false, err: "", at: 0,
   plans: {}, log: [], contacts: null, cAt: 0,
-  draft: null, draftRep: "", saving: false, msg: "",
+  h: null, hNote: "", draft: null, draftRep: "", saving: false, msg: "",
   open: {}, editContacts: false, cDraft: null, cMsg: "",
   rEdit: false, rDraft: null, rSorted: null, rMsg: "", rBusy: false
 };
@@ -70,6 +82,7 @@ async function load(s, force) {
     const r = await callRpc("dpc_plan_get", { p_token: token(s) });
     st.plans = {};
     (r && r.plans || []).forEach(p => { st.plans[p.rep_id] = Object.assign({ updated_at: p.updated_at }, p.plan || {}); });
+    const mine = myRep(s), pend = mine && LS.get("dpc.pendplan." + mine); if (pend) { st.plans[mine] = Object.assign({}, st.plans[mine] || {}, pend); setTimeout(() => flushPlan(s), 0); }
     st.log = (r && r.log) || [];
     st.err = ""; st.loaded = true; st.at = Date.now();
   } catch (e) { st.err = e && e.message ? e.message : "Could not load goals."; }
@@ -152,6 +165,8 @@ function draftFor(repId) {
   if (st.draftRep !== repId || !st.draft) {
     const p = st.plans[repId] || {};
     st.draftRep = repId;
+    const kept = LS.get("dpc.gdraft." + repId);
+    if (kept && typeof kept === "object") { st.draft = Object.assign({ g30: "", g60: "", g90: "", p30: "", p60: "", p90: "", income: "", pay: "", days: "5" }, kept); return st.draft; }
     st.draft = {
       g30: p.g30 || "", g60: p.g60 || "", g90: p.g90 || "", p30: p.p30 || "", p60: p.p60 || "", p90: p.p90 || "",
       income: p.income ? String(p.income) : "", pay: p.pay ? String(p.pay) : "", days: p.days ? String(p.days) : "5"
@@ -318,19 +333,20 @@ function routinePage(s) {
   const repId = myRep(s);
   if (!repId) return `<div class="card"><h4>My routine</h4><p class="fine">Sign in with your rep key to set your routine.</p></div>`;
   const plan = st.plans[repId] || null, items = plan && plan.routine || [];
+  if (items.length && !st.rEdit && st.rDraft === null && typeof LS.get("dpc.rdraft." + repId) === "string") st.rEdit = true;
   if (items.length && !st.rEdit) {
     return `<div class="plwrap">
       <div class="card"><h4>My routine today</h4>${checklistHtml(repId, items, true)}</div>
       ${ratingHtml(items, plan, true, s, repId)}
       <div class="card"><button class="ghost sm" data-plredit="1">Change my routine</button>${st.rMsg ? `<p class="fine" role="status">${esc(st.rMsg)}</p>` : ""}</div></div>`;
   }
-  if (st.rDraft === null) st.rDraft = items.length ? draftText(items) : "";
+  if (st.rDraft === null) { const kept = LS.get("dpc.rdraft." + repId); st.rDraft = typeof kept === "string" ? kept : items.length ? draftText(items) : ""; }
   let h = `<div class="plwrap"><div class="card"><h4>My routine</h4>
     <p class="fine">Type your routine, one thing per line, or add a photo of it written out. The app turns it into an AM and PM checklist.</p>
     <textarea data-plrtext="1" rows="7" maxlength="2000" placeholder="Wake up at 6 AM&#10;Read my goals out loud&#10;Practice my pitch for 10 minutes&#10;In the field by 11&#10;Review my numbers at night">${esc(st.rDraft)}</textarea>
     <button class="primary plfull" data-plrsort="1" ${st.rBusy ? "disabled" : ""}>Make my checklist</button>
     <div class="plbtns"><label class="ghost sm plfile">Add a photo or file<input type="file" data-plrfile="1" accept="image/*,.pdf,.docx,.txt"></label>
-    ${items.length ? `<button class="ghost sm" data-plredit="0">Cancel</button>` : ""}</div>
+    ${items.length ? `<button class="ghost sm" data-plredit="0">Cancel</button><button class="ghost sm" data-plrremove="1">${st.rRemove ? "Tap again to remove it" : "Remove my routine"}</button>` : ""}</div>
     ${st.rMsg ? `<p class="fine" role="status">${esc(st.rMsg)}</p>` : ""}</div>`;
   if (st.rSorted && st.rSorted.length) {
     const idx = st.rSorted.map((it, i) => [it, i]);
@@ -345,6 +361,112 @@ function routinePage(s) {
   return h + `</div>`;
 }
 
+// ---- Goal helper: guided steps for reps who cannot name goals (state lives in st.h) ----
+const HCHIPS = [
+  { k: "bills", label: "Being behind on bills", pg: "Pay every bill on time this month so I stop stressing", money: 1200, why: "pay my bills on time" },
+  { k: "check", label: "Living paycheck to paycheck", pg: "Save $200 so I have a cushion before payday", money: 400, why: "build a cushion before payday" },
+  { k: "car", label: "No car or a bad car", pg: "Save $500 toward a reliable car so I can get to work", money: 500, why: "get a reliable car" },
+  { k: "fam", label: "Not seeing my family", pg: "Spend 2 days with my family so I feel close to them", why: "have time and energy for my family" },
+  { k: "stuck", label: "Feeling stuck", pg: "Finish 3 things on my list each week so I feel I am moving", why: "keep moving forward" },
+  { k: "owe", label: "Owing people money", pg: "Pay back $100 so I stop owing people", money: 300, why: "pay back what I owe" },
+  { k: "shape", label: "Being out of shape", pg: "Work out 3 times a week so I have more energy", why: "have more energy" }
+];
+const HDEF_SALES = 12;
+const hs = () => st.h || (st.h = { open: false, step: 1, picks: {}, custom: "", items: [], plan: "" });
+function hPay() { const r = myRep(lastS); const d = r ? draftFor(r) : null; return d ? num(d.pay) : 0; }
+function hBiz(it) {
+  const pay = hPay(), c = num(it.cost);
+  if (it.money !== undefined) {
+    const n = c && pay ? Math.max(1, Math.ceil(c / pay)) : HDEF_SALES;
+    return `Close ${n} sales so I can ${it.why}`;
+  }
+  return `Be in the field 5 days a week so I can ${it.why}`;
+}
+function hBuild() {
+  const h = hs(), old = {}; h.items.forEach(i => old[i.k] = i);
+  const out = [];
+  HCHIPS.forEach(c => { if (h.picks[c.k]) out.push(old[c.k] || { k: c.k, label: c.label, money: c.money, why: c.why, cost: "", pg: c.pg, bg: "", bEdit: false, ps: 0, bs: 0 }); });
+  const cu = h.custom.trim().slice(0, 80);
+  if (cu) { const o = old.custom; out.push(o && o.label === cu ? o : { k: "custom", label: cu, why: "put this behind me", pg: `Take 1 step this week to end this: ${cu}`, bg: "", bEdit: false, ps: 0, bs: 0 }); }
+  out.slice(0, 6).forEach((it, i) => { if (!it.bEdit) it.bg = hBiz(it); if (!it.ps) { it.ps = [30, 60, 90][Math.min(i, 2)]; it.bs = it.ps; } });
+  h.items = out.slice(0, 6);
+}
+function hCanNext(h) { return h.step === 1 ? (Object.keys(h.picks).some(k => h.picks[k]) || !!h.custom.trim()) : true; }
+function hStepHtml(h) {
+  if (h.step === 1) {
+    return `<h5 class="plhq">What do you not want anymore?</h5><p class="fine">Tap all that fit.</p>
+    <div class="plchips">${HCHIPS.map(c => `<button type="button" class="plchip${h.picks[c.k] ? " on" : ""}" data-plh="chip" data-k="${c.k}" aria-pressed="${!!h.picks[c.k]}">${esc(c.label)}</button>`).join("")}</div>
+    <label class="pllab">Or type your own<input data-plhin="custom" maxlength="80" placeholder="Something else" value="${esc(h.custom)}"></label>`;
+  }
+  if (h.step === 2) {
+    const pay = hPay();
+    return `<h5 class="plhq">Here are your starter goals</h5><p class="fine">Change any line you want.${pay ? "" : " Save your pay per sale below for exact numbers."}</p>
+    ${h.items.map((it, i) => `<div class="plhitem"><p class="plhlab">${esc(it.label)}</p>
+      <label class="pllab">Personal goal<textarea data-plhin="pg:${i}" rows="2" maxlength="600">${esc(it.pg)}</textarea></label>
+      ${it.money !== undefined ? `<label class="pllab">Money I need a month<input data-plhin="cost:${i}" inputmode="decimal" placeholder="$${it.money}" value="${esc(it.cost)}"></label>` : ""}
+      <label class="pllab">Business goal that helps<textarea data-plhin="bg:${i}" rows="2" maxlength="600">${esc(it.bg)}</textarea></label></div>`).join("")}`;
+  }
+  if (h.step === 3) {
+    return `<h5 class="plhq">What could get in the way, and what will you do then?</h5><p class="fine">One short line. Start with If.</p>
+    <label class="pllab">My plan<textarea data-plhin="plan" rows="2" maxlength="200" placeholder="If I feel tired, I will knock 5 more doors">${esc(h.plan)}</textarea></label>`;
+  }
+  const row = (it, i, kind) => {
+    const key = kind === "p" ? "ps" : "bs", txt = kind === "p" ? it.pg : it.bg;
+    return `<div class="plhrow"><p><b>${kind === "p" ? "Personal" : "Business"}:</b> ${esc(txt)}</p><div class="plhslots">${[30, 60, 90].map(n => `<button type="button" class="plchip${it[key] === n ? " on" : ""}" data-plh="slot" data-i="${i}" data-kind="${kind}" data-n="${n}" aria-pressed="${it[key] === n}">${n} days</button>`).join("")}</div></div>`;
+  };
+  return `<h5 class="plhq">Where does each goal go?</h5><p class="fine">Tap 30, 60 or 90 days for each one.</p>
+    ${h.items.map((it, i) => row(it, i, "p") + row(it, i, "b")).join("")}`;
+}
+function helperHtml() {
+  const h = hs();
+  if (!h.open) return `<button type="button" class="ghost plhopen" data-plh="open">Not sure what you want? Start here</button>${st.hNote ? `<p class="fine" role="status">${esc(st.hNote)}</p>` : ""}`;
+  return `<div class="plhelper" role="group" aria-label="Goal helper"><div class="plhtop"><span class="fine">Step ${h.step} of 4</span><button type="button" class="ghost sm" data-plh="close">Close</button></div>
+    ${hStepHtml(h)}
+    <div class="plhnav"><button type="button" class="ghost" data-plh="back" ${h.step === 1 ? "disabled" : ""}>Back</button>
+    ${h.step < 4 ? `<button type="button" class="primary" data-plh="next" ${hCanNext(h) ? "" : "disabled"}>Next</button>` : `<button type="button" class="primary" data-plh="use">Use these goals</button>`}</div></div>`;
+}
+function hUse() {
+  const h = hs(), r = myRep(lastS); if (!r) return;
+  const d = draftFor(r), add = {};
+  h.items.forEach(it => {
+    if (it.ps) (add["p" + it.ps] = add["p" + it.ps] || []).push(it.pg.trim());
+    if (it.bs) (add["g" + it.bs] = add["g" + it.bs] || []).push(it.bg.trim());
+  });
+  const pl = h.plan.trim();
+  if (pl) { const k = Object.keys(add).filter(x => x[0] === "g").sort()[0]; if (k) add[k].push(pl); }
+  Object.keys(add).forEach(k => {
+    const txt = add[k].filter(Boolean).map(x => x.replace(/[.\s]+$/, "")).join(". ");
+    if (!txt) return;
+    const cur = String(d[k] || "").trim();
+    d[k] = (cur ? cur.replace(/[.\s]+$/, "") + ". " : "") + txt + ".";
+  });
+  LS.set("dpc.gdraft." + r, d);
+  st.h = { open: false, step: 1, picks: {}, custom: "", items: [], plan: "" };
+  st.hNote = "Your goals are filled in below. Check the letters, then tap Save my goals.";
+  app.render();
+  setTimeout(() => { const el = document.querySelector(".plslot"); el && el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
+}
+function hClick(b) {
+  const h = hs(), a = b.dataset.plh;
+  if (a === "open") { h.open = true; h.step = 1; st.hNote = ""; }
+  else if (a === "close") h.open = false;
+  else if (a === "chip") h.picks[b.dataset.k] = !h.picks[b.dataset.k];
+  else if (a === "back") h.step = Math.max(1, h.step - 1);
+  else if (a === "next") { if (!hCanNext(h)) return; if (h.step === 1) hBuild(); h.step = Math.min(4, h.step + 1); }
+  else if (a === "slot") { const it = h.items[+b.dataset.i]; if (it) it[b.dataset.kind === "p" ? "ps" : "bs"] = +b.dataset.n; }
+  else if (a === "use") return hUse();
+  app.render();
+  if (a === "next" || a === "back" || a === "open") setTimeout(() => { const el = document.querySelector(".plhelper") || document.querySelector(".plhopen"); el && el.scrollIntoView({ block: "nearest" }); }, 30);
+}
+function hInput(t) {
+  const h = hs(), [f, i] = t.dataset.plhin.split(":"), it = h.items[+i];
+  if (f === "custom") { h.custom = t.value; const n = document.querySelector('[data-plh="next"]'); if (n) n.disabled = !hCanNext(h); }
+  else if (f === "plan") h.plan = t.value;
+  else if (f === "pg" && it) it.pg = t.value;
+  else if (f === "bg" && it) { it.bg = t.value; it.bEdit = true; }
+  else if (f === "cost" && it) { it.cost = t.value; if (!it.bEdit) { it.bg = hBiz(it); const bx = document.querySelector(`[data-plhin="bg:${i}"]`); if (bx) bx.value = it.bg; } }
+}
+
 function repPage(s) {
   const repId = myRep(s);
   if (!repId) return `<div class="card"><h4>My goals</h4><p class="fine">Sign in with your rep key to set your goals.</p></div>`;
@@ -352,6 +474,7 @@ function repPage(s) {
   const live = Object.assign({}, plan || {}, draftPlan(repId));
   return `<div class="plwrap">
   <div class="card"><h4>My goals</h4>
+    ${helperHtml()}
     <p class="fine">Write them in your own words. Your manager sees what you write here.</p>
     <p class="fine plsmartkey">Make each goal SMART. The letters light up as your goal hits them: <b>S</b> Specific, <b>M</b> Measurable, <b>A</b> Attainable, <b>R</b> Relatable, <b>T</b> Time frame. The time frame is already set by the 30, 60 and 90 day slots.</p>
     ${[[30, "12 sales so I can cover my rent and car", "save $300 so I have money set aside"], [60, "", ""], [90, "", ""]].map(([n, pb, pp]) => `<div class="plslot"><h5>${n} days from now</h5>
@@ -388,16 +511,35 @@ function reportText(s) {
     (none.length ? "\nNo routine yet: " + none.join(", ") : "");
 }
 
+function needOf(s, r, kind) {
+  const p = st.plans[r.id], items = p && p.routine || [], day = localDay();
+  if (kind === "goals") {
+    if (!(p && (anyGoal(p) || p.income))) return { n: 2, say: "Help them write their first goal." };
+    const pc = pace(s, r.id, p), t = today(s, r.id);
+    if (pc && pc.ready && t.d < pc.dDay) return { n: 3, say: `Behind on D today, ${t.d} of ${pc.dDay}. Ask what is in the way.` };
+    const weak = GOAL_KEYS.some(k => { const v = String(p[k] || "").trim(); if (!v) return false; const r0 = smartOf(v, +k.slice(1)); return !(r0.S && r0.M && r0.A && r0.R); });
+    if (weak) return { n: 1, say: "Some goals are not SMART yet. Help them fix the dark letters." };
+    return { n: 0, say: pc && pc.ready ? "On pace today. Tell them." : "Goals set. Pace shows after their first sale." };
+  }
+  if (!items.length) return { n: 2, say: "Help them build a routine." };
+  const l = dayLog(r.id, day), n = l ? doneCount(items, l) : 0;
+  if (n >= items.length) return { n: 0, say: "Done today. Tell them." };
+  return { n: 1, say: n ? `${items.length - n} left today. A quick text helps.` : "Nothing checked yet today. Check in." };
+}
+function needSummary(s, kind) {
+  const reps = (s.reps || []).filter(r => r.active !== false), k = reps.filter(r => needOf(s, r, kind).n >= 1).length;
+  return reps.length ? `<p class="plneed"><b>${k ? `${k} ${k === 1 ? "rep needs" : "reps need"} a nudge.` : "Everyone is on track."}</b> ${k ? "They are at the top." : ""}</p>` : "";
+}
 function repRows(s, kind) {
   const reps = (s.reps || []).filter(r => r.active !== false), day = localDay();
-  return reps.map(r => {
+  return reps.map(r => [r, needOf(s, r, kind)]).sort((a, b) => b[1].n - a[1].n).map(([r, nd]) => {
     const p = st.plans[r.id], items = p && p.routine || [];
     const l = dayLog(r.id, day), n = l ? doneCount(items, l) : 0;
     const hasGoals = p && (anyGoal(p) || p.income);
     const pc = p ? pace(s, r.id, p) : null, t = today(s, r.id);
     const status = kind === "goals"
-      ? (hasGoals ? '<span class="pill good">Goals set</span>' : '<span class="pill">No goals yet</span>')
-      : (!items.length ? '<span class="pill">No routine yet</span>' : n >= items.length ? '<span class="pill good">Done today</span>' : `<span class="pill warn">${n} of ${items.length} done today</span>`);
+      ? (!hasGoals ? '<span class="pill warn">No goals yet</span>' : nd.n >= 3 ? '<span class="pill bad">Behind</span>' : nd.n === 1 ? '<span class="pill warn">Needs work</span>' : '<span class="pill good">Goals set</span>')
+      : (!items.length ? '<span class="pill warn">No routine yet</span>' : n >= items.length ? '<span class="pill good">Done today</span>' : `<span class="pill warn">${n} of ${items.length} done today</span>`);
     const key = kind + ":" + r.id, open = !!st.open[key];
     let detail = "";
     if (open) {
@@ -412,11 +554,13 @@ function repRows(s, kind) {
     }
     return `<li class="plrep"><button class="plrepbtn" data-plopen="${esc(key)}" aria-expanded="${open}">
       <span>${esc(r.name || "Unnamed")}</span>${status}
-      <span class="fine">${kind === "goals" && pc && pc.ready ? `D ${t.d} of ${pc.dDay}` : ""}</span><span class="plchev" aria-hidden="true">${open ? "▴" : "▾"}</span></button>${detail}</li>`;
+      <span class="plchev" aria-hidden="true">${open ? "▴" : "▾"}</span><span class="plsay fine">${esc(nd.say)}</span></button>${detail}</li>`;
   }).join("");
 }
 function managerGoals(s) {
-  return `<div class="plwrap"><div class="card"><h4>Team goals</h4><p class="fine">Tap a rep to see their 30, 60 and 90 day goals and their daily pace.</p>
+  return `<div class="plwrap"><div class="card"><h4>Team goals</h4>${needSummary(s, "goals")}<p class="fine">Tap a rep to see their 30, 60 and 90 day goals and their daily pace.</p>
+    <div class="plbtns"><button class="ghost sm" data-plrefresh="1" ${st.loading ? "disabled" : ""}>${st.loading ? "Refreshing" : "Refresh"}</button></div>
+    ${st.at ? `<p class="fine">Updated ${new Date(st.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}.</p>` : ""}
     ${st.err ? `<p class="cbalert bad">${esc(st.err)}</p>` : ""}
     <ul class="plreps">${repRows(s, "goals") || '<li class="fine">No reps yet.</li>'}</ul></div></div>`;
 }
@@ -431,7 +575,7 @@ function managerRoutine(s) {
     <div class="plbtns"><button class="ghost sm" data-plcopy="1">Copy report</button><button class="ghost sm" data-plrefresh="1" ${st.loading ? "disabled" : ""}>${st.loading ? "Refreshing" : "Refresh"}</button></div>
     ${st.at ? `<p class="fine">Updated ${new Date(st.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}.</p>` : ""}
   </div>
-  <div class="card"><h4>Team routines</h4><p class="fine">Tap a rep to see their AM and PM checklist and rating.</p>
+  <div class="card"><h4>Team routines</h4>${needSummary(s, "routine")}<p class="fine">Tap a rep to see their AM and PM checklist and rating.</p>
     ${st.err ? `<p class="cbalert bad">${esc(st.err)}</p>` : ""}
     <ul class="plreps">${repRows(s, "routine") || '<li class="fine">No reps yet.</li>'}</ul></div></div>`;
 }
@@ -471,6 +615,7 @@ export function render(root, s, a) {
   if (!st.loaded && !st.err) { root.innerHTML = `<div class="card"><h4>${title}</h4><p class="fine">Loading.</p></div>`; return; }
   const mgr = role(s) === "manager";
   root.innerHTML = s.view === "routine" ? (mgr ? managerRoutine(s) : routinePage(s)) : (mgr ? managerGoals(s) : repPage(s));
+  root.querySelectorAll(".plwrap textarea").forEach(grow);
 }
 
 async function save(s) {
@@ -482,22 +627,22 @@ async function save(s) {
   const plan = { g30: d.g30.trim().slice(0, 600), g60: d.g60.trim().slice(0, 600), g90: d.g90.trim().slice(0, 600), p30: d.p30.trim().slice(0, 600), p60: d.p60.trim().slice(0, 600), p90: d.p90.trim().slice(0, 600), income: num(d.income), pay: num(d.pay), days: Math.min(7, Math.max(1, Math.round(num(d.days)) || 5)), routine };
   st.saving = true; st.msg = ""; app.render();
   try {
-    await callRpc("dpc_plan_set", { p_token: token(s), p_rep_id: repId, p_plan: plan });
+    const how = await sendPlan(s, repId, plan);
     st.plans[repId] = Object.assign({ updated_at: new Date().toISOString() }, plan);
-    st.draft = null; st.msg = "Saved. Your manager can see your goals.";
+    st.draft = null; LS.set("dpc.gdraft." + repId, null); st.hNote = ""; st.msg = how === "sent" ? "Saved. Your manager can see your goals." : "Not sent yet. It is kept on this phone and sends when you have signal.";
   } catch (e) { st.msg = e && e.message ? e.message : "Could not save. Try again."; }
   st.saving = false; app.render();
 }
 async function saveRoutine(s) {
-  const repId = myRep(s); if (!repId || st.saving || !st.rSorted || !st.rSorted.length) return;
+  const repId = myRep(s); if (!repId || st.saving || !st.rSorted || (!st.rSorted.length && !st.rRemove)) return;
   const cur = st.plans[repId] || {}, old = cur.routine || [];
   const routine = st.rSorted.map((it, i) => { const same = old.find(o => o.text === it.text); return { id: same ? same.id : "r" + Date.now().toString(36) + i, text: it.text, part: it.part }; });
   const plan = { g30: cur.g30 || "", g60: cur.g60 || "", g90: cur.g90 || "", p30: cur.p30 || "", p60: cur.p60 || "", p90: cur.p90 || "", income: num(cur.income), pay: num(cur.pay), days: Math.min(7, Math.max(1, Math.round(num(cur.days)) || 5)), routine };
   st.saving = true; app.render();
   try {
-    await callRpc("dpc_plan_set", { p_token: token(s), p_rep_id: repId, p_plan: plan });
+    const how = await sendPlan(s, repId, plan);
     st.plans[repId] = Object.assign({ updated_at: new Date().toISOString() }, plan);
-    st.rEdit = false; st.rDraft = null; st.rSorted = null; st.rMsg = "Saved. Check it off as you go. Your manager can see it.";
+    st.rEdit = false; st.rDraft = null; LS.set("dpc.rdraft." + repId, null); st.rSorted = null; st.rRemove = false; st.rMsg = !routine.length ? "Routine removed." : how === "sent" ? "Saved. Check it off as you go. Your manager can see it." : "Not sent yet. It is kept on this phone and sends when you have signal.";
   } catch (e) { st.rMsg = e && e.message ? e.message : "Could not save. Try again."; }
   st.saving = false; app.render();
 }
@@ -522,14 +667,18 @@ async function saveContacts(s) {
 
 export function init(a) {
   app = a;
+  window.addEventListener("online", () => lastS && flushPlan(lastS));
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && lastS) flushPlan(lastS); });
   const getState = () => lastS;
   document.addEventListener("input", e => {
     const t = e.target; if (!t || !t.dataset) return;
-    if (t.dataset.pl && st.draft) { st.draft[t.dataset.pl] = t.value; if (/^(income|pay|days)$/.test(t.dataset.pl)) app.render();
+    if (t.dataset.pl && st.draft) { st.draft[t.dataset.pl] = t.value; LS.set("dpc.gdraft." + st.draftRep, st.draft); grow(t); if (/^(income|pay|days)$/.test(t.dataset.pl)) app.render();
       else { const box = document.querySelector(`[data-plsmart="${t.dataset.pl}"]`); if (box) box.innerHTML = smartInner(t.value, +box.dataset.days || 30, true); } }
     if (t.dataset.plcontacts) st.cDraft = t.value;
-    if (t.dataset.plrtext) { st.rDraft = t.value; if (st.rSorted) { st.rSorted = null; st.rMsg = "Tap Make my checklist to update it."; app.render(); } }
+    if (t.dataset.plrtext) { st.rDraft = t.value; { const r0 = myRep(lastS); r0 && LS.set("dpc.rdraft." + r0, t.value); } if (st.rSorted) { st.rSorted = null; st.rMsg = "Tap Make my checklist to update it."; app.render(); } }
   });
+  document.addEventListener("input", e => { const t = e.target; if (t && t.dataset && t.dataset.plhin) hInput(t); });
+  document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("[data-plh]"); if (b) hClick(b); });
   document.addEventListener("focusin", e => { const t = e.target; if (t && t.dataset && /^(income|pay|days)$/.test(t.dataset.pl || "")) setTimeout(() => { try { t.select(); } catch {} }, 0); });
   document.addEventListener("change", e => {
     const t = e.target; if (!t || !t.dataset) return;
@@ -551,7 +700,7 @@ export function init(a) {
     }
   });
   document.addEventListener("click", e => {
-    const b = e.target.closest && e.target.closest("[data-plsave],[data-plopen],[data-plcopy],[data-plrefresh],[data-plcedit],[data-plcsave],[data-plredit],[data-plrsort],[data-plrmove],[data-plrsave]");
+    const b = e.target.closest && e.target.closest("[data-plsave],[data-plopen],[data-plcopy],[data-plrefresh],[data-plcedit],[data-plcsave],[data-plredit],[data-plrsort],[data-plrmove],[data-plrsave],[data-plrremove]");
     if (!b) return;
     const s = getState(); if (!s) return;
     if (b.dataset.plsave) save(s);
@@ -563,7 +712,8 @@ export function init(a) {
     }
     else if (b.dataset.plcedit) { st.editContacts = b.dataset.plcedit === "1"; st.cDraft = null; st.cMsg = ""; app.render(); }
     else if (b.dataset.plcsave) saveContacts(s);
-    else if (b.dataset.plredit) { st.rEdit = b.dataset.plredit === "1"; st.rDraft = null; st.rSorted = null; st.rMsg = ""; app.render(); }
+    else if (b.dataset.plredit) { st.rEdit = b.dataset.plredit === "1"; st.rDraft = null; { const r0 = myRep(s); r0 && LS.set("dpc.rdraft." + r0, null); } st.rSorted = null; st.rRemove = false; st.rMsg = ""; app.render(); }
+    else if (b.dataset.plrremove) { if (!st.rRemove) { st.rRemove = true; app.render(); } else { st.rSorted = []; saveRoutine(s); } }
     else if (b.dataset.plrsort) {
       const el = document.querySelector("[data-plrtext]"); if (el) st.rDraft = el.value;
       st.rSorted = sortRoutine(st.rDraft);

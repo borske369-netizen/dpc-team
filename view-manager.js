@@ -113,7 +113,7 @@ import{tipHtml as N}from"./guide.js";import{teamTotals as A,weakestStage as O,fl
       <div class="drow ${o.topN>=3?"attn":""}">
         <div class="dname">${p(o.name)}</div>
         <div class="dtext"><b>${o.n}</b> time${o.n===1?"":"s"} focused on something outside their control.
-        Most often: <b>${p(Z(o.top))}</b> (${o.topN}).${o.last?` Latest: "${p(o.last)}"`:""}
+        Most often: <b>${p(Z(o.top))}</b> (${o.topN}).
         ${o.topN>=3?" Same subject three or more times. That is the coaching conversation.":""}</div>
       </div>`).join("")}</div>
 
