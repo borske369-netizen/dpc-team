@@ -97,3 +97,6 @@ summary{min-height:44px;display:flex;align-items:center;box-sizing:border-box}
 .plrepbtn .pill.warn{background:#5a4210!important;color:#ffd98a!important}
 .plrepbtn .pill.bad{background:#5a1a22!important;color:#ffb3bd!important}
 .oob-verdict-body .oob-verdict-line + .oob-verdict-line{margin-top:6px}
+
+#topsignout{white-space:nowrap;padding-left:10px;padding-right:10px;flex-shrink:0}
+.appbar .net{min-width:0;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
