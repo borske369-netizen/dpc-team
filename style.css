@@ -100,3 +100,4 @@ summary{min-height:44px;display:flex;align-items:center;box-sizing:border-box}
 
 #topsignout{white-space:nowrap;padding-left:10px;padding-right:10px;flex-shrink:0}
 .appbar .net{min-width:0;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.oob-verdict-body .oob-note{margin:6px 0 8px;color:var(--text,#f2f2f2);font-weight:600;line-height:1.4}
