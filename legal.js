@@ -6,7 +6,7 @@ const o="Copyright 2026 David Borske. All rights reserved.",n="dpc_terms_v1";fun
         <li>This app is licensed to your team only.</li>
         <li>Do not copy, share, sell or rebuild it, or help anyone else do so.</li>
         <li>Your team's numbers belong to your team.</li>
-        <li>Questions about the app: borske369@gmail.com.</li>
+        <li>Questions about the app: text Furthest Step support at (704) 885-5457.</li>
       </ul>
       <button class="primary termsok" type="button" data-termsagree="1">I agree</button>
       <p class="legalline">${o}</p>
