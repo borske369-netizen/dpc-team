@@ -40,7 +40,7 @@ import{tipHtml as A}from"./guide.js";import{dayPlanHtml as F,habitsHtml as W}fro
       ${M("D to presentation",k.dToP,o.d,o.p)}
       ${M("Presentation to ask",k.pToC,o.p,o.c)}
       ${M("Ask to sale",k.cToSale,o.c,o.sale)}
-      <p class="fine">Each bar is the share that made it from the step before, today only.
+      <p class="fine">Each bar is the share that made it from the step before, today only. When a bar is low, fix the step right before it. Low D to presentation: fix the door. Low presentation to ask: fix the presentation. Low ask to sale: fix how you ask.
       Not yet means you have not reached that step, which is not the same as zero.</p>
     </div>
 
