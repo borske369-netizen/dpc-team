@@ -1,25 +1,26 @@
 /*! Copyright 2026 David Borske. All rights reserved. */
-import{tipHtml as N}from"./guide.js";import{teamTotals as A,weakestStage as O,flagState as B,weekTotals as w,weekSpan as W,weekLabel as U,isCurrentWeek as M,rates as I,repTotals as S,fmtPct as b,fmtNum as m,fmt1 as H,num as $,newRep as G,FLAG_RULE as g,today as v,weekStart as T,repFirstWeek as Y,MIN_DOORS_FOR_DIAGNOSIS as E,weekTarget as _,minText as z,offAllWeek as K,sumEntries as V,isOff as q}from"./model.js";import{offTodayTeamLine as J,rosterOffHtml as Q}from"./timeoff.js";import{rosterPatternHtml as X}from"./events.js";import{esc as p}from"./view-rep.js";import{subjectLabel as Z}from"./control.js";import{teamMisses as x,dayActivity as tt}from"./selfcheck.js";import{teamReport as et,dueReport as st}from"./reports.js";const F={report:null};function yt(t,e,n){const s=A(e),a=O(s.per),o=st(e),r=F.report?et(e,F.report):null;t.innerHTML=`
+import{tipHtml as N}from"./guide.js";import{teamTotals as A,weakestStage as O,flagState as B,weekTotals as w,weekSpan as W,weekLabel as U,isCurrentWeek as M,rates as I,repTotals as S,fmtPct as b,fmtNum as m,fmt1 as H,num as $,newRep as G,FLAG_RULE as g,today as v,weekStart as T,repFirstWeek as Y,MIN_DOORS_FOR_DIAGNOSIS as E,weekTarget as _,minText as z,offAllWeek as K,sumEntries as V,isOff as q}from"./model.js";import{offTodayTeamLine as J,rosterOffHtml as Q}from"./timeoff.js";import{rosterPatternHtml as X}from"./events.js";import{esc as p}from"./view-rep.js";import{subjectLabel as Z}from"./control.js";import{teamMisses as x,dayActivity as tt}from"./selfcheck.js";import{teamReport as et,dueReport as st}from"./reports.js";const F={report:null,period:(()=>{try{return localStorage.getItem("dpc.kpiPeriod")||"day"}catch{return"day"}})()};function kpFrom(){return F.period==="week"?T(v()):F.period==="all"?null:v()}function kpEntries(t,e){const n=kpFrom(),r=v();return(t.entries[e]||[]).filter(s=>!n||s.date>=n&&s.date<=r)}function kpTotals(e){const n=e.reps.map(t=>{const s=V(kpEntries(e,t.id));return{rep:t,t:s,r:I(s)}}),r=n.reduce((t,s)=>({d:t.d+s.t.d,p:t.p+s.t.p,c:t.c+s.t.c,sale:t.sale+s.t.sale,days:t.days+s.t.days}),{d:0,p:0,c:0,sale:0,days:0});return{per:n,t:r,r:I(r),logged:n.filter(t=>t.t.d+t.t.p+t.t.c+t.t.sale>0).length}}function kpWord(){return F.period==="week"?"this week":F.period==="all"?"all time":"today"}function kpSeg(){const n=[["day","Today"],["week","This week"],["all","All time"]];return`<div class="kpiseg" aria-label="Numbers for">${n.map(([t,e])=>`<button type="button" class="${F.period===t?"primary":"ghost"}" data-kpiperiod="${t}" aria-pressed="${F.period===t}">${e}</button>`).join("")}</div>`}function yt(t,e,n){const s=A(e),kp=kpTotals(e),a=O(s.per),o=st(e),r=F.report?et(e,F.report):null;t.innerHTML=`
   <div class="mgr">
     ${r?at(r,e):""}
     ${!r&&o?`<button class="duebar" data-report="${p(o.kind)}" data-duekey="${p(o.key)}">
       <span class="duedot" aria-hidden="true"></span><span>${p(o.label)}</span><span class="duego">Open</span></button>`:""}
     ${s.flagged.length||s.atRisk.length?rt(s):""}
 
+    ${kpSeg()}
     <div class="kpis">
-      ${k("Active reps",m(s.activeCount),e.reps.length+" on the roster")}
-      ${k("D",m(s.t.d),"Made contact, all time")}
-      ${k("P",m(s.t.p),"Presentations, "+b(s.r.dToP)+" of D")}
-      ${k("C",m(s.t.c),"Asked for the business, "+b(s.r.pToC)+" of P",!0)}
-      ${k("S",m(s.t.sale),"Sales, "+b(s.r.cToSale)+" of C")}
-      ${k("D per sale",H(s.r.doorsPerSale),"Team wide")}
+      ${F.period==="all"?k("Active reps",m(s.activeCount),e.reps.length+" on the roster"):k("Logged "+kpWord(),m(kp.logged),"of "+e.reps.length+" on the roster")}
+      ${k("D",m(kp.t.d),F.period==="all"?"Made contact, all time":"Made contact "+kpWord())}
+      ${k("P",m(kp.t.p),"Presentations, "+b(kp.r.dToP)+" of D")}
+      ${k("C",m(kp.t.c),"Asked for the business, "+b(kp.r.pToC)+" of P",!0)}
+      ${k("S",m(kp.t.sale),"Sales, "+b(kp.r.cToSale)+" of C")}
+      ${k("D per sale",H(kp.r.doorsPerSale),F.period==="all"?"Team wide, all time":"Team wide "+kpWord())}
     </div>
 
 
     <div class="card">
       <h4>${P(e)?"Team":"Your reps"}</h4>
       ${J(e)}
-      <p class="fine">${lt(e)} Most sales this week on top.${P(e)?"":" Tap a name to see that rep's day."}</p>
+      <p class="fine">${lt(e)} D, P, C and S columns show ${kpWord()}. Most sales this week on top.${P(e)?"":" Tap a name to see that rep's day."}</p>
       <div class="scroll">
         <table class="roster">
           <thead><tr>
@@ -127,7 +128,7 @@ import{tipHtml as N}from"./guide.js";import{teamTotals as A,weakestStage as O,fl
       <div class="ftrack"><div class="ffill ${r===2?"ask":""} ${r===3?"sale":""}" style="width:${(a/e*100).toFixed(1)}%"></div></div>
       <div class="fval">${m(a)}</div>
       <div class="fconv">${o===null?"":b(o)+" of the step above"}</div>
-    </div>`).join("")}</div>`}function y(t,e){const n=v();return(t.entries[e]||[]).filter(s=>s.date===n).reduce((s,a)=>s+(Number(a.sale)||0),0)}function it(t,e){if(new Date().getHours()<11)return!1;const n=v();return q(e,n)?!1:!(t.entries[e]||[]).some(s=>s.date===n&&(Number(s.d)||0)>0)}function lt(t){const e=(t.reps||[]).reduce((n,s)=>n+y(t,s.id),0);return"Team today: "+e+" sale"+(e===1?"":"s")+"."}function dt(t){const e=T(v()),n=s=>{const a=w(t,s)[e];return a?a.sale:0};return t.reps.slice().sort((s,a)=>n(a.id)-n(s.id)||y(t,a.id)-y(t,s.id)||S(t,a.id).sale-S(t,s.id).sale)}function P(t){return t.cloud&&t.cloud.role?t.cloud.role==="rep":t.role==="rep"}function ct(t,e,n){const s=S(t,e.id),a=I(s),o=B(t,e.id),l=w(t,e.id)[T(v())],c=l?l.sale:0,i=(u,h)=>!n||h===null?`<td class="num">${u}</td>`:`<td class="num ${h<n*.8?"low":""}">${u}</td>`,d=P(t)?`<span class="rname-plain">${p(e.name||"Unnamed")}</span>`:`<button class="linkbtn" data-openrep="${p(e.id)}">${p(e.name||"Unnamed")}</button>`;return`<tr data-rep="${p(e.id)}">
+    </div>`).join("")}</div>`}function y(t,e){const n=v();return(t.entries[e]||[]).filter(s=>s.date===n).reduce((s,a)=>s+(Number(a.sale)||0),0)}function it(t,e){if(new Date().getHours()<11)return!1;const n=v();return q(e,n)?!1:!(t.entries[e]||[]).some(s=>s.date===n&&(Number(s.d)||0)>0)}function lt(t){const e=(t.reps||[]).reduce((n,s)=>n+y(t,s.id),0);return"Team today: "+e+" sale"+(e===1?"":"s")+"."}function dt(t){const e=T(v()),n=s=>{const a=w(t,s)[e];return a?a.sale:0};return t.reps.slice().sort((s,a)=>n(a.id)-n(s.id)||y(t,a.id)-y(t,s.id)||S(t,a.id).sale-S(t,s.id).sale)}function P(t){return t.cloud&&t.cloud.role?t.cloud.role==="rep":t.role==="rep"}function ct(t,e,n){const s=F.period==="all"?S(t,e.id):V(kpEntries(t,e.id)),a=I(s),o=B(t,e.id),l=w(t,e.id)[T(v())],c=l?l.sale:0,i=(u,h)=>!n||h===null?`<td class="num">${u}</td>`:`<td class="num ${h<n*.8?"low":""}">${u}</td>`,d=P(t)?`<span class="rname-plain">${p(e.name||"Unnamed")}</span>`:`<button class="linkbtn" data-openrep="${p(e.id)}">${p(e.name||"Unnamed")}</button>`;return`<tr data-rep="${p(e.id)}">
     <td>${d}${o.flagged?' <span class="pill bad mgr-only">Flagged</span>':o.atRisk?' <span class="pill warn mgr-only">At risk</span>':""}${Q(t,e.id)}${X(t,e.id)}</td>
     <td class="num">${m(y(t,e.id))}${it(t,e.id)?'<br><span class="fine mgr-only">not started</span>':""}</td>
     <td class="num accent">${c}</td>
