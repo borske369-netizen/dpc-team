@@ -76,7 +76,7 @@ ${o.cloud&&o.cloud.role==="manager"?'<h2 id="oob-title" class="oob-title">The he
       <li>Focus goes to something you cannot move</li>
       <li>Attitude drops</li>
       <li>Pace drops</li>
-      <li>The door that does open gets the worst version of you</li>
+      <li>The next customer gets the worst version of you</li>
     </ol>
       <p class="ctl-line">Attitude is focus. Are you in bounds or out of bounds? Get back to what is on the board: your pace, your pitch and your next contact.</p>
       <p class="ctl-redirect-l">Back on the board</p>
