@@ -175,7 +175,7 @@ function repHtml(s, t) {
   if (t.objections.length) {
     h += `<details class="card playbook tp" id="tp-objs">
     <summary><b>Your team's objections</b> <span class="fine">Tap to open</span></summary>
-    <p>Study these before your next conversation. Most of your answer is Feel and Felt. Keep Found short, then go back to the ask.</p>
+    <p>Study these before your next conversation. People do not care what you know until they know you care, so most of your answer is Feel and Felt. Keep Found short, then go back to the ask.</p>
     ${objectionsList(t.objections)}
     <p class="fine">Type one of these into the board search and it answers with your team's lines.</p>
   </details>`;
